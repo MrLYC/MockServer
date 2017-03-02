@@ -9,6 +9,7 @@ from tornado import ioloop
 class SETTINGS(object):
     ADDRESS = "0.0.0.0"
     PORT = 8080
+    DB = 0
 
 
 def start_server():
