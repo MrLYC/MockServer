@@ -14,15 +14,35 @@ logger = logging.getLogger(__name__)
 
 
 class MockHandler(web.RequestHandler):
+    IDENT_HEDERS = {
+        # "Accept": "",
+    }
 
     def initialize(self):
         self.redis_cli = cache.AsyncRedisCli.get_global_instance()
 
     @gen.coroutine
     def make_response_from_cache(self, key):
-        body = yield self.redis_cli.hget(key, "body")
-        logger.debug("body: %s", body)
-        self.write(body or "")
+        response_info = yield self.redis_cli.hgetall(key)
+        body = ""
+        status_code = 200
+        status_reason = None
+        for k, v in response_info.items():
+            key = k.decode(SETTINGS.ENCODING)
+            if key == "body":
+                body = v
+            elif key == "status_code":
+                status_code = int(v)
+            elif key == "status_reason":
+                status_reason = v
+            else:
+                type_, _, name = key.partition(":")
+                if type_ == "cookie":
+                    self.set_cookie(name, v)
+                elif type_ == "header":
+                    self.set_header(name, v)
+        self.set_status(status_code, status_reason)
+        self.write(body)
 
     @gen.coroutine
     def handle_request(self, items):
@@ -35,16 +55,42 @@ class MockHandler(web.RequestHandler):
             "method": self.request.method,
             "path": self.request.path,
         })
-        for k, v in self.request.query_arguments.items():
-            kwargs.update("qs_%s" % k, v, SETTINGS.CACHE_STRICT_MODE)
+
+        kwargs.update({
+            "query_string:%s" % k: ",".join(
+                sorted(i.decode(SETTINGS.ENCODING) for i in v)
+            )
+            for k, v in self.request.query_arguments.items()
+        })
+
+        headers = self.request.headers
+        kwargs.update({
+            "http_header:%s" % k: headers.get(k, d)
+            for k, d in self.IDENT_HEDERS.items()
+        })
         return kwargs
 
     @web.asynchronous
     @gen.coroutine
-    def get(self):
+    def _idempotent_method(self):
         yield self.handle_request(self.get_uri_items_from_request(
             self.request,
         ))
+
+    @web.asynchronous
+    @gen.coroutine
+    def _nonidempotent_method(self):
+        yield self.handle_request(self.get_uri_items_from_request(
+            self.request,
+            body=self.request.body,
+        ))
+
+    get = _idempotent_method
+    delete = _idempotent_method
+    head = _idempotent_method
+    post = _nonidempotent_method
+    put = _nonidempotent_method
+    patch = _nonidempotent_method
 
 
 def init():

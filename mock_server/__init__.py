@@ -20,6 +20,8 @@ class SETTINGS(object):
     CACHE_DB = 0
     CACHE_STRICT_MODE = False
 
+    ENCODING = "utf-8"
+
 
 def config_logger(loggers, level="INFO"):
     logging.config.dictConfig({
@@ -59,7 +61,7 @@ def start_server():
     )
     parser.add_argument(
         "-p", "--port", default=SETTINGS.PORT,
-        help="server listen port",
+        type=int, help="server listen port",
     )
     parser.add_argument(
         "-A", "--databse_address", default=SETTINGS.CACHE_ADDRESS,
@@ -67,11 +69,11 @@ def start_server():
     )
     parser.add_argument(
         "-P", "--databse_port", default=SETTINGS.CACHE_PORT,
-        help="cache databse port",
+        type=int, help="cache databse port",
     )
     parser.add_argument(
         "-d", "--database", default=SETTINGS.CACHE_DB,
-        help="database name",
+        type=int, help="database name",
     )
     parser.add_argument(
         "--debug", action="store_true",

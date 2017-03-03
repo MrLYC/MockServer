@@ -24,18 +24,21 @@ class SyncRedis(Redis):
                         SETTINGS.CACHE_ADDRESS, SETTINGS.CACHE_PORT,
                         SETTINGS.CACHE_DB,
                     )
+
         return cls.GLOBAL_INSTANCE
 
-    def __init__(self, addr, port=6379, db=0):
-        super(SyncRedis, self).__init__(addr, port, db)
+    def __init__(self, addr, port=6379, db=0, **kwargs):
+        super(SyncRedis, self).__init__(
+            host=addr, port=port, db=db, **kwargs
+        )
 
 
 class AsyncRedisCli(SyncRedis):
     GLOBAL_INSTANCE = None
     GLOBAL_INIT_LOCK = RLock()
 
-    def __init__(self, addr, port=6379, db=0):
-        super(AsyncRedisCli, self).__init__(addr, port, db)
+    def __init__(self, addr, port=6379, db=0, **kwargs):
+        super(AsyncRedisCli, self).__init__(addr, port, db, **kwargs)
         self.worker = pool.ThreadPool()
 
     def execute_command(self, *args, **kwargs):
