@@ -1,19 +1,19 @@
 # coding: utf-8
 
-from threading import Rlock
+from threading import RLock
 
 from multiprocessing import pool
 
 from tornado.concurrent import Future
 
-import redis
+from redis import Redis
 
 from mock_server import SETTINGS
 
 
-class AsyncRedisCli(redis.Redis):
+class SyncRedis(Redis):
     GLOBAL_INSTANCE = None
-    GLOBAL_INIT_LOCK = Rlock()
+    GLOBAL_INIT_LOCK = RLock()
 
     @classmethod
     def get_global_instance(cls):
@@ -21,9 +21,18 @@ class AsyncRedisCli(redis.Redis):
             with cls.GLOBAL_INIT_LOCK:
                 if not cls.GLOBAL_INSTANCE:
                     cls.GLOBAL_INSTANCE = cls(
-                        SETTINGS.ADDRESS, SETTINGS.PORT, SETTINGS.DB,
+                        SETTINGS.CACHE_ADDRESS, SETTINGS.CACHE_PORT,
+                        SETTINGS.CACHE_DB,
                     )
         return cls.GLOBAL_INSTANCE
+
+    def __init__(self, addr, port=6379, db=0):
+        super(SyncRedis, self).__init__(addr, port, db)
+
+
+class AsyncRedisCli(SyncRedis):
+    GLOBAL_INSTANCE = None
+    GLOBAL_INIT_LOCK = RLock()
 
     def __init__(self, addr, port=6379, db=0):
         super(AsyncRedisCli, self).__init__(addr, port, db)
