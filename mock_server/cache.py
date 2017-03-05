@@ -28,7 +28,7 @@ class SyncRedis(Redis):
                     )
         return cls.GLOBAL_INSTANCE
 
-    def __init__(self, addr, port=6379, db=0):
+    def __init__(self, addr="localhost", port=6379, db=0):
         super(SyncRedis, self).__init__(addr, port, db)
 
 
