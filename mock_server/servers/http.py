@@ -19,30 +19,25 @@ class MockHandler(web.RequestHandler):
     }
 
     def initialize(self):
-        self.redis_cli = cache.AsyncRedisCli.get_global_instance()
+        self.cache = cache.Cahce()
 
     @gen.coroutine
-    def make_response_from_cache(self, key):
-        response_info = yield self.redis_cli.hgetall(key)
-        body = ""
-        status_code = 200
-        status_reason = None
-        for k, v in response_info.items():
-            key = k.decode(SETTINGS.ENCODING)
-            if key == "body":
-                body = v
-            elif key == "status_code":
-                status_code = int(v)
-            elif key == "status_reason":
-                status_reason = v
-            else:
-                type_, _, name = key.partition(":")
-                if type_ == "cookie":
-                    self.set_cookie(name, v)
-                elif type_ == "header":
-                    self.set_header(name, v)
-        self.set_status(status_code, status_reason)
-        self.write(body)
+    def make_response_from_cache(self, uri):
+        response_info = yield self.cache.get_data(
+            uri=uri, patterns=["cookie", "header"],
+        )
+
+        self.set_status(
+            int(response_info.get("status_code", 200)),
+            response_info.get("status_reason"),
+        )
+        for k, v in response_info.get("cookie", {}).items():
+            self.set_cookie(k, v)
+
+        for k, v in response_info.get("header", {}).items():
+            self.set_header(k, v)
+
+        self.write(response_info.get("body", ""))
 
     @gen.coroutine
     def handle_request(self, items):
