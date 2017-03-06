@@ -13,25 +13,26 @@ from mock_server import utils
 logger = logging.getLogger(__name__)
 
 
-class MockInfoValue(object):
-    yes = b"yes"
-    no = b"no"
-
-
 class MockTCPHandler(object):
-    def __init__(self, stream, address, cache=None, sentry_mark=b"\n"):
+    CACHE_BOOLEAN = {
+        b"yes": True,
+        b"no": False,
+    }
+
+    def __init__(self, stream, address, port, cache=None, sentry_mark=b"\n"):
         self.stream = stream
         self.address = address
+        self.port = port
         self.cache = cache or Cache()
         self.sentry_mark = sentry_mark
 
     def on_close(self):
         self.stream.close()
-        logger.info("stream closed by client")
+        logger.info("stream[%s:%s] closed by client", self.address, self.port)
 
     def close_stream(self):
         self.stream.close()
-        logger.info("stream closed by server")
+        logger.info("stream[%s:%s] closed by server", self.address, self.port)
 
     def flush_stream(self):
         self.stream._handle_write()
@@ -56,12 +57,9 @@ class MockTCPHandler(object):
         stream.set_close_callback(self.on_close)
         mock_tcp_config = yield self.cache.get_data("mock_tcp")
         greeting = mock_tcp_config.get("greeting")
-        allow_empty_request = MockInfoValue.yes == mock_tcp_config.get(
+        allow_empty_request = self.CACHE_BOOLEAN.get(mock_tcp_config.get(
             "allow_empty_request",
-        )
-        allow_empty_response = MockInfoValue.yes == mock_tcp_config.get(
-            "allow_empty_response",
-        )
+        ), False)
 
         try:
             if greeting:
@@ -73,10 +71,12 @@ class MockTCPHandler(object):
                     self.close_stream()
                 response_info = yield self.make_response(request)
                 data = response_info.get("data", b"")
-                if data or allow_empty_response:
+                if data:
                     yield stream.write(data)
-                close_stream = response_info.get("close_stream")
-                if close_stream == MockInfoValue.yes:
+                close_stream = self.CACHE_BOOLEAN.get(
+                    response_info.get("close_stream"), False,
+                )
+                if close_stream:
                     self.close_stream()
         except StreamClosedError:
             pass
@@ -85,7 +85,7 @@ class MockTCPHandler(object):
 class MockTCPServer(tcpserver.TCPServer):
     @gen.coroutine
     def handle_stream(self, stream, address):
-        handler = MockTCPHandler(stream, address)
+        handler = MockTCPHandler(stream, address[0], address[1])
         yield handler.run()
 
 
