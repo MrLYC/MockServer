@@ -59,18 +59,24 @@ class Cahce(object):
         self.redis_cli = redis_cli or AsyncRedisCli.get_global_instance()
 
     @gen.coroutine
-    def get_data(self, uri, patterns=None):
-        data_list = []
+    def _get_all(self, uri):
         uri_data = yield self.redis_cli.hgetall(uri)
-        data_list.insert(0, uri_data)
+        raise gen.Return({
+            k.decode(SETTINGS.ENCODING): v
+            for k, v in uri_data.items()
+        })
+
+    @gen.coroutine
+    def get_data(self, uri, patterns=None):
+        uri_data = yield self._get_all(uri)
+        data = {}
         template_uri = uri_data.get(self.TEMPLATE_REF_KEY)
         if template_uri:
-            template_data = yield self.get_data(template_uri)
-            data_list.insert(0, template_data)
-        data = {
-            k.decode(SETTINGS.ENCODING): v
-            for k, v in chain(*(i.items() for i in data_list))
-        }
+            template_data = yield self.get_data(
+                template_uri.decode(SETTINGS.ENCODING),
+            )
+            data.update(template_data)
+        data.update(uri_data)
         if patterns:
             for k in list(i for i in data if i.find(self.PATTERN_SEP) > 0):
                 type_, _, name = k.partition(self.PATTERN_SEP)
