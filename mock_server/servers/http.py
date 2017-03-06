@@ -23,7 +23,7 @@ class MockHandler(web.RequestHandler):
     }
 
     def initialize(self):
-        self.cache = cache.Cahce()
+        self.cache = cache.Cache()
 
     @gen.coroutine
     def service_static_file(self, response_info):

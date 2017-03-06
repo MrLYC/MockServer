@@ -50,7 +50,7 @@ class AsyncRedisCli(SyncRedis):
         return future
 
 
-class Cahce(object):
+class Cache(object):
     PATTERN_SEP = ":"
     TEMPLATE_REF_KEY = "$ref"
 
