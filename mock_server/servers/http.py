@@ -114,9 +114,12 @@ class MockHandler(web.RequestHandler):
 
 
 def init(server):
-    application = web.Application([
-        (r".*?", MockHandler),
-    ])
+    application = web.Application(
+        [
+            (r".*?", MockHandler),
+        ],
+        debug=SETTINGS.DEBUG,
+    )
 
     http_server = httpserver.HTTPServer(application)
     http_server.listen(SETTINGS.PORT, SETTINGS.ADDRESS)
