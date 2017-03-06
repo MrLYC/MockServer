@@ -11,7 +11,7 @@ class AdminHandler(web.RequestHandler):
         self.write("ok!")
 
 
-def init():
+def init(server):
     application = web.Application([
         (r"/?", AdminHandler),
     ])

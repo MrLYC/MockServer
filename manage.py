@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from mock_server import start_server
+from mock_server import Server
 
 
 if __name__ == '__main__':
-    start_server()
+    server = Server()
+    server.start()

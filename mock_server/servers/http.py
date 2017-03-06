@@ -88,7 +88,7 @@ class MockHandler(web.RequestHandler):
     patch = _nonidempotent_method
 
 
-def init():
+def init(server):
     application = web.Application([
         (r".*?", MockHandler),
     ])
