@@ -19,12 +19,11 @@ class MockTCPHandler(object):
         b"no": False,
     }
 
-    def __init__(self, stream, address, port, cache=None, sentry_mark=b"\n"):
+    def __init__(self, stream, address, port, cache=None):
         self.stream = stream
         self.address = address
         self.port = port
         self.cache = cache or Cache()
-        self.sentry_mark = sentry_mark
 
     def on_close(self):
         self.stream.close()
@@ -57,6 +56,7 @@ class MockTCPHandler(object):
         stream.set_close_callback(self.on_close)
         mock_tcp_config = yield self.cache.get_data("mock_tcp")
         greeting = mock_tcp_config.get("greeting")
+        sep_regex = mock_tcp_config.get("sep_regex", b"\n")
         allow_empty_request = self.CACHE_BOOLEAN.get(mock_tcp_config.get(
             "allow_empty_request",
         ), False)
@@ -66,7 +66,7 @@ class MockTCPHandler(object):
                 yield stream.write(greeting)
 
             while not stream.closed():
-                request = yield stream.read_until(self.sentry_mark)
+                request = yield stream.read_until_regex(sep_regex)
                 if not request and not allow_empty_request:
                     self.close_stream()
                 response_info = yield self.make_response(request)
@@ -83,6 +83,7 @@ class MockTCPHandler(object):
 
 
 class MockTCPServer(tcpserver.TCPServer):
+
     @gen.coroutine
     def handle_stream(self, stream, address):
         handler = MockTCPHandler(stream, address[0], address[1])
