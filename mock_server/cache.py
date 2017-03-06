@@ -1,7 +1,6 @@
 # coding: utf-8
 
 from threading import RLock
-from itertools import chain
 
 from multiprocessing import pool
 

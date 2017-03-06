@@ -13,6 +13,10 @@ from mock_server import utils
 logger = logging.getLogger(__name__)
 
 
+class MockDataType(object):
+    static_file = b"static_file"
+
+
 class MockHandler(web.RequestHandler):
     IDENT_HEDERS = {
         # "Accept": "",
@@ -20,6 +24,16 @@ class MockHandler(web.RequestHandler):
 
     def initialize(self):
         self.cache = cache.Cahce()
+
+    @gen.coroutine
+    def service_static_file(self, response_info):
+        with open(response_info.get("data"), "rb") as fp:
+            while True:
+                chunk = fp.read(SETTINGS.BUFFER_SIZE)
+                if not chunk:
+                    break
+                self.write(chunk)
+                yield gen.Task(self.flush)
 
     @gen.coroutine
     def make_response_from_cache(self, uri):
@@ -37,13 +51,24 @@ class MockHandler(web.RequestHandler):
         for k, v in response_info.get("header", {}).items():
             self.set_header(k, v)
 
-        self.write(response_info.get("body", ""))
+        data_type = response_info.get("data_type")
+        if data_type == MockDataType.static_file:
+            yield self.service_static_file(response_info)
+        else:
+            self.write(response_info.get("data", ""))
 
     @gen.coroutine
     def handle_request(self, items):
         uri = utils.get_uri("mock_http", items)
-        logger.info("uri: %s", uri)
-        yield self.make_response_from_cache(uri)
+        self.set_header("X-MockServer-URI", uri)
+        self.set_header("X-MockServer-Status", "ok")
+        try:
+            yield self.make_response_from_cache(uri)
+        except gen.Return:
+            raise
+        except Exception as err:
+            self.set_header("X-MockServer-Status", str(err))
+            logger.exception(err)
 
     def get_uri_items_from_request(self, request, **kwargs):
         kwargs.update({

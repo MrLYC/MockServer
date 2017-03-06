@@ -21,6 +21,7 @@ class SETTINGS(object):
     CACHE_STRICT_MODE = False
 
     ENCODING = "utf-8"
+    BUFFER_SIZE = 5 * 1024
 
 
 def config_logger(loggers, level="INFO"):
