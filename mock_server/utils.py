@@ -1,8 +1,13 @@
 # coding: utf-8
 
+import logging
 import hashlib
+import binascii
 from collections import namedtuple
-import codecs
+
+from mock_server import SETTINGS
+
+logger = logging.getLogger(__name__)
 
 UriInfo = namedtuple("UriInfo", [
     "schema", "fields", "items", "strict",
@@ -13,10 +18,10 @@ def get_uri_item(key, value, strict=False, encoding="utf-8"):
     if not isinstance(value, bytes):
         value = value.encode(encoding)
 
-    if len(value) >= 16 and not strict:  # choice a shortest result
-        value = hashlib.md5(value).hexdigest()
+    if len(value) >= SETTINGS.AUTO_STRICT_ITEM_LENGTH and not strict:
+        value = "~%s" % hashlib.md5(value).hexdigest()
     else:
-        value = "~%s" % "".join("%x" % i for i in value)
+        value = "".join("%x" % i for i in value)
 
     return "%s=%s" % (key, value)
 
@@ -35,8 +40,8 @@ def get_uri(schema, items, strict=False, encoding="utf-8"):
 
 
 def parse_uri_item(value, strict=False):
-    if value.startswith("~"):
-        return codecs.decode(value[1:], "hex").decode("utf-8")
+    if not value.startswith("~"):
+        return binascii.unhexlify(value).decode("utf-8")
     return value
 
 
@@ -48,7 +53,7 @@ def parse_uri(uri):
     for i in paths.split("/"):
         key, _, value = i.partition("=")
         if strict:
-            if key == "!" or not value.startswith("~"):
+            if key == "!" or value.startswith("~"):
                 strict = False
         fields.append(key)
         items[key] = value

@@ -24,6 +24,7 @@ class SETTINGS(object):
     BUFFER_SIZE = 5 * 1024
 
     STATIC_PATH = "static/"
+    AUTO_STRICT_ITEM_LENGTH = 32
 
 
 def config_logger(loggers, level="INFO"):
