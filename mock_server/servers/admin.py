@@ -3,6 +3,9 @@
 import logging
 import base64
 
+from jsonschema import Draft4Validator as Validator
+from jsonschema.exceptions import ValidationError
+
 from tornado import httpserver
 from tornado import web
 from tornado import gen
@@ -35,6 +38,14 @@ class ApiHandlerMixin(object):
 
     def get_request_params(self):
         return {}
+
+    def check_params(self, validate_schema, params):
+        validator = Validator(validate_schema)
+        try:
+            validator.validate(params)
+        except ValidationError as err:
+            return str(err)
+        return None
 
     def write_json(self, data, ok=True, message=None, **kwargs):
         self.set_header("Content-type", "application/json")
@@ -74,6 +85,31 @@ class ItemAdminHandler(ApiHandlerMixin, web.RequestHandler):
     SCHEMA_ITEMS = {
         "mock_http": {},
         "mock_tcp": {},
+    }
+    POST_SCHEMA = {
+        "type": "object",
+        "required": ["schema", "request", "response"],
+        "properties": {
+            "schema": {
+                "type": "string",
+                "enum": ["mock_tcp", "mock_http"],
+            },
+            "response_type": {
+                "type": "string",
+                "enum": ["raw", "base64"],
+            },
+            "response_encoding": {
+                "type": "string",
+            },
+            "request": {
+                "type": "object",
+                "minProperties": 1,
+            },
+            "response": {
+                "type": "object",
+                "minProperties": 1,
+            },
+        },
     }
 
     def get_request_params(self):
@@ -126,15 +162,20 @@ class ItemAdminHandler(ApiHandlerMixin, web.RequestHandler):
             self.write_json(None, ok=False, message="parse json failed")
             raise gen.Return()
 
+        error = self.check_params(self.POST_SCHEMA, params)
+        if error:
+            self.write_json(None, ok=False, message=error)
+            raise gen.Return()
+
         uri = utils.get_uri(
             schema=params.get("schema"),
             items=params.get("request"),
         )
-        data_type = params.get("data_type", "base64")
-        data_encoding = params.get("data_encodeing", SETTINGS.ENCODING)
+        response_type = params.get("response_type").decode(SETTINGS.ENCODING)
+        response_encoding = params.get("response_encoding", SETTINGS.ENCODING)
         for k, v in params.get("response").items():
-            if data_type == "base64":
-                data = v.encode(data_encoding)
+            if response_type == "base64":
+                data = base64.decodestring(v.encode(response_encoding))
             else:
                 data = v
             yield self.cache.set_data(uri, data, k)
