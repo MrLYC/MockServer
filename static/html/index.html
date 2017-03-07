@@ -1,10 +1,30 @@
 <html>
-  <head>
+<head>
+	<script src="https://unpkg.com/vue/dist/vue.js"></script>
+	<script type="text/x-template" id="template-mock-http">
 
-  </head>
-  <body>
-    <p>
-      Hello
-    </p>
-  </body>
+	</script>
+</head>
+<body>
+<div id="main">
+	<div id="nav">
+		<ul class="nav-list">
+			<li v-for="schema in schemas" v-on:click="changeSchema(schema.name)">
+			{{ schema.name }}
+			</li>
+		</ul>
+	</div>
+	<div id="catalog"></div>
+	<div id="content">
+		<div id="ident_content">
+			<ul>
+				<template v-for="field in schema.fields">
+					<select v-model="selected">
+				</template>
+			</ul>
+		</div>
+	</div>
+</div>
+<script src="/static/js/index.js"></script>
+</body>
 </html>
