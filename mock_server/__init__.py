@@ -23,6 +23,8 @@ class SETTINGS(object):
     ENCODING = "utf-8"
     BUFFER_SIZE = 5 * 1024
 
+    STATIC_PATH = "static/"
+
 
 def config_logger(loggers, level="INFO"):
     logging.config.dictConfig({
@@ -88,6 +90,10 @@ class Server(object):
             type=int, help="database name",
         )
         parser.add_argument(
+            "-s", "--static_path", default=SETTINGS.STATIC_PATH,
+            help="path to static files",
+        )
+        parser.add_argument(
             "--debug", action="store_true",
             help="debug mode",
         )
@@ -98,6 +104,7 @@ class Server(object):
         SETTINGS.CACHE_ADDRESS = arguments.databse_address
         SETTINGS.CACHE_PORT = arguments.databse_port
         SETTINGS.CACHE_DB = arguments.database
+        SETTINGS.STATIC_PATH = arguments.static_path
 
         config_logger(
             ["tornado", "mock_server"],
