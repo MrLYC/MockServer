@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import logging
+import base64
 
 from tornado import httpserver
 from tornado import web
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class MockDataType(object):
     static_file = b"static_file"
+    base64 = b"base64"
 
 
 class MockHandler(web.RequestHandler):
@@ -52,10 +54,13 @@ class MockHandler(web.RequestHandler):
             self.set_header(k, v)
 
         data_type = response_info.get("data_type")
+        data = response_info.get("data", "")
         if data_type == MockDataType.static_file:
             yield self.service_static_file(response_info)
-        else:
-            self.write(response_info.get("data", ""))
+        elif data_type == MockDataType.base64:
+            self.write(base64.decodebytes(data))
+        elif data:
+            self.write(data)
 
     @gen.coroutine
     def handle_request(self, items):

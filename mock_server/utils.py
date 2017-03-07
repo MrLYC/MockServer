@@ -2,6 +2,7 @@
 
 import hashlib
 from collections import namedtuple
+import codecs
 
 UriInfo = namedtuple("UriInfo", [
     "schema", "fields", "items", "strict",
@@ -31,6 +32,12 @@ def get_uri(schema, items, strict=False, encoding="utf-8"):
         path = get_uri_item("!", path, strict=False)
 
     return "%s:%s" % (schema, path)
+
+
+def parse_uri_item(value, strict=False):
+    if value.startswith("~"):
+        return codecs.decode(value[1:], "hex").decode("utf-8")
+    return value
 
 
 def parse_uri(uri):

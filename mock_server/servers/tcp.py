@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import logging
+import base64
 
 from tornado import tcpserver
 from tornado import gen
@@ -36,10 +37,9 @@ class MockTCPHandler(object):
     def flush_stream(self):
         self.stream._handle_write()
 
-    def make_uri_from_request(self, request, close=False, **kwargs):
+    def make_uri_from_request(self, request, **kwargs):
         kwargs.update({
             "request": request,
-            "close": "yes" if close else "no",
         })
         return utils.get_uri("mock_tcp", kwargs)
 
@@ -71,7 +71,10 @@ class MockTCPHandler(object):
                     self.close_stream()
                 response_info = yield self.make_response(request)
                 data = response_info.get("data", b"")
+                data_type = response_info.get("data_type")
                 if data:
+                    if data_type == b"base64":
+                        data = base64.decodebytes(data)
                     yield stream.write(data)
                 close_stream = self.CACHE_BOOLEAN.get(
                     response_info.get("close_stream"), False,

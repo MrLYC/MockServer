@@ -1,7 +1,6 @@
 # coding: utf-8
 
 import logging
-import base64
 
 from jsonschema import Draft4Validator as Validator
 from jsonschema.exceptions import ValidationError
@@ -32,6 +31,23 @@ class IndexHandler(web.StaticFileHandler):
 
 
 class ApiHandlerMixin(object):
+    SCHEMA_INFO = {
+        "mock_http": {
+            "request": [
+                "method", "path", "query_string:*", "http_header:*",
+            ],
+            "response": [
+                "status_code", "status_reason", "cookie:*", "header:*",
+                "data_type", "data",
+            ],
+        },
+        "mock_tcp": {
+            "request": ["request"],
+            "response": [
+                "greeting", "sep_regex", "data_type", "data", "close_stream",
+            ],
+        },
+    }
 
     def initialize(self):
         self.cache = cache.Cache()
@@ -71,21 +87,26 @@ class SchemaAdminHandler(ApiHandlerMixin, web.RequestHandler):
     def get(self):
         try:
             request_params = self.get_request_params()
-            data = {}
-            for schema in request_params.get("schemas") or ():
+            result = []
+            for schema in (
+                request_params.get("schemas") or self.SCHEMA_INFO.keys()
+            ):
+                schema_info = self.SCHEMA_INFO.get(schema)
+                if not schema_info:
+                    continue
                 items = yield self.cache.list_uri_by_schema(schema)
-                data[schema] = items
-            self.write_json(data)
+                schema_info = schema_info.copy()
+                schema_info.update({
+                    "items": items,
+                })
+                result.append(schema_info)
+            self.write_json(result)
         except Exception as err:
             logger.exception(err)
             self.write_json(None, ok=False, message=str(err))
 
 
 class ItemAdminHandler(ApiHandlerMixin, web.RequestHandler):
-    SCHEMA_ITEMS = {
-        "mock_http": {},
-        "mock_tcp": {},
-    }
     POST_SCHEMA = {
         "type": "object",
         "required": ["schema", "request", "response"],
@@ -93,13 +114,6 @@ class ItemAdminHandler(ApiHandlerMixin, web.RequestHandler):
             "schema": {
                 "type": "string",
                 "enum": ["mock_tcp", "mock_http"],
-            },
-            "response_type": {
-                "type": "string",
-                "enum": ["raw", "base64"],
-            },
-            "response_encoding": {
-                "type": "string",
             },
             "request": {
                 "type": "object",
@@ -130,15 +144,21 @@ class ItemAdminHandler(ApiHandlerMixin, web.RequestHandler):
         if not data:
             raise gen.Return(None)
         uri_info = utils.parse_uri(uri)
-        uri_data = self.SCHEMA_ITEMS.get(uri_info.schema, {}).copy()
-        uri_data["uri"] = uri
-        uri_data["schema"] = uri_info.schema
-        uri_data.update({
-            k: base64.encodestring(v).decode(SETTINGS.ENCODING)
-            for k, v in data.items()
-        })
-        uri_data.update(ex_data)
-        raise gen.Return(uri_data)
+        result = {
+            "uri": uri,
+            "schema": uri_info.schema,
+            "strict": uri_info.strict,
+            "request": {
+                k: utils.parse_uri_item(v)
+                for k, v in uri_info.items.items()
+            },
+            "response": {
+                k: v.decode(SETTINGS.ENCODING)
+                for k, v in data.items()
+            }
+        }
+        result.update(ex_data)
+        raise gen.Return(result)
 
     @gen.coroutine
     def get(self):
@@ -171,14 +191,8 @@ class ItemAdminHandler(ApiHandlerMixin, web.RequestHandler):
             schema=params.get("schema"),
             items=params.get("request"),
         )
-        response_type = params.get("response_type").decode(SETTINGS.ENCODING)
-        response_encoding = params.get("response_encoding", SETTINGS.ENCODING)
         for k, v in params.get("response").items():
-            if response_type == "base64":
-                data = base64.decodestring(v.encode(response_encoding))
-            else:
-                data = v
-            yield self.cache.set_data(uri, data, k)
+            yield self.cache.set_data(uri, v, k)
         uri_info = yield self.get_uri_info(uri)
         self.write_json(uri_info)
 
