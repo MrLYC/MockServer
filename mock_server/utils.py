@@ -42,7 +42,7 @@ def get_uri(schema, items, strict=False, encoding="utf-8"):
 def parse_uri_item(value, strict=False):
     if not value.startswith("~"):
         return binascii.unhexlify(value).decode("utf-8")
-    return value
+    return None
 
 
 def parse_uri(uri):
