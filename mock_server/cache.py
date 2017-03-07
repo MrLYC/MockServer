@@ -1,7 +1,7 @@
 # coding: utf-8
 
+import logging
 from threading import RLock
-
 from multiprocessing import pool
 
 from tornado.concurrent import Future
@@ -10,6 +10,8 @@ from tornado import gen
 from redis import Redis
 
 from mock_server import SETTINGS
+
+logger = logging.getLogger(__name__)
 
 
 class SyncRedis(Redis):
@@ -64,6 +66,25 @@ class Cache(object):
             k.decode(SETTINGS.ENCODING): v
             for k, v in uri_data.items()
         })
+
+    @gen.coroutine
+    def delete_uri(self, uri):
+        result = yield self.redis_cli.delete(uri)
+        raise gen.Return(result)
+
+    @gen.coroutine
+    def delete_fields(self, uri, fields):
+        result = yield self.redis_cli.hdel(uri, *fields)
+        raise gen.Return(result)
+
+    @gen.coroutine
+    def list_uri_by_schema(self, schema):
+        keys = yield self.redis_cli.keys("%s:*" % schema)
+        logger.debug(keys)
+        raise gen.Return([
+            i.decode(SETTINGS.ENCODING)
+            for i in keys
+        ])
 
     @gen.coroutine
     def get_data(self, uri, patterns=None):
