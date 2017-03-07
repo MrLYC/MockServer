@@ -1,16 +1,13 @@
 <html>
 <head>
 	<script src="https://unpkg.com/vue/dist/vue.js"></script>
-	<script type="text/x-template" id="template-mock-http">
-
-	</script>
 </head>
 <body>
 <div id="main">
 	<div id="nav">
 		<ul class="nav-list">
-			<li v-for="schema in schemas" v-on:click="changeSchema(schema.name)">
-			{{ schema.name }}
+			<li v-for="schema in schemas" v-on:click="changeSchema(schema)">
+                {{ schema.name }}
 			</li>
 		</ul>
 	</div>
@@ -18,8 +15,14 @@
 	<div id="content">
 		<div id="ident_content">
 			<ul>
-				<template v-for="field in schema.fields">
-					<select v-model="selected">
+				<template v-for="field in schema.request_fields">
+                    <li>
+                        <label>{{ field.name }}: </label>
+                        <select v-if="field.type == 'choice'" v-model>
+                            <option v-for="choice in field.choices">{{ choice }}</option>
+                        </select>
+                        <input v-else v-bind="field.default_value">
+                    </li>
 				</template>
 			</ul>
 		</div>
