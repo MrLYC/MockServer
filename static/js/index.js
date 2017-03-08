@@ -1,7 +1,7 @@
 
 function urlJoin(url, part, params) {
     var values = [];
-    for (k in params) {
+    for (var k in params) {
         values.push(encodeURIComponent(k) + "=" + encodeURIComponent(params[k]));
     }
     if (part) {
@@ -30,7 +30,7 @@ function Request(success_callback, error_callback) {
             error_callback(request);
         }
     };
-    
+
     self.request.onerror = function () {
         if (error_callback) {
             error_callback(self.request);
@@ -75,16 +75,52 @@ function SchemaAPI(endpoint) {
 function ItemAPI(endpoint) {
     var self = this;
     self.url = urlJoin(endpoint, "api/items");
-    
+
     self.get = function (uri, success_callback, error_callback) {
         var request = new Request(success_callback, error_callback);
         request.getJson(urlJoin(self.url, "", {uri: uri}));
     };
-    
+
     self.post = function (uri, data, success_callback, error_callback) {
         var request = new Request(success_callback, error_callback);
         request.postJson(self.url, data);
     };
+
+    self.parseUri = function (uri) {
+        var re_sep = /[^:\/]+/g;
+        var schema = re_sep.exec(uri)[0];
+        var mathch = null;
+        var fields = [];
+        var items = {};
+        var values = {};
+        var strict = true;
+        while (match = re_sep.exec(uri)) {
+            var item = match[0].split("=", 2);
+            var key = item[0];
+            var value = item[1];
+            fields.push(key);
+            items[key] = value;
+            if (key == "!" || value.startsWith("~")) {
+                strict = false;
+            }
+            else {
+                var buf = [];
+                for (var i = 0; i < value.length; i += 2) {
+                    buf.push(String.fromCharCode(
+                        parseInt(value.substr(i, 2), 16)
+                    ));
+                }
+                values[key] = buf.join("");
+            }
+        }
+        return {
+            schema: schema,
+            strict: strict,
+            fields: fields,
+            values: values,
+            items: items,
+        };
+    }
 }
 
 var endpoint = document.location.protocol + "//" + document.location.host + "/";
@@ -118,7 +154,7 @@ var schema_tab_view = new Vue({
                     alert_message(response.message);
                     return;
                 }
-                for (schema of response.data) {
+                for (var schema of response.data) {
                     if (schema.schema == default_name) {
                         self.current_schema_name = schema.schema;
                     }
