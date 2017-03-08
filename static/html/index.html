@@ -1,32 +1,38 @@
 <html>
 <head>
 	<script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script type="text/x-template" id="object-details">
+        <div>
+            <template v-if="self instanceof Array">
+                <ol>
+                    <li v-for="v of self" v-if="v != self">
+                        <span v-if="typeof v != 'object'">{{ v }}</span>
+                    </li>
+                </ol>
+            </template>
+            <template v-else>
+                <ul>
+                    <li v-for="(v, k) of self" v-if="!k.startsWith('$') && !k.startsWith('_') && v != self">
+                        <span>{{ k }}</span>:
+                        <span v-if="typeof v != 'object'">{{ v }}</span>
+                        <div is="object-details" :self="v" v-else></div>
+                    </li>
+                </ul>
+            </template>
+        </div>
+    </script>
 </head>
 <body>
 <div id="main">
-	<div id="nav">
-		<ul class="nav-list">
-			<li v-for="schema in schemas" v-on:click="changeSchema(schema)">
-                {{ schema.name }}
-			</li>
-		</ul>
-	</div>
-	<div id="catalog"></div>
-	<div id="content">
-		<div id="ident_content">
-			<ul>
-				<template v-for="field in schema.request_fields">
-                    <li>
-                        <label>{{ field.name }}: </label>
-                        <select v-if="field.type == 'choice'" v-model>
-                            <option v-for="choice in field.choices">{{ choice }}</option>
-                        </select>
-                        <input v-else v-bind="field.default_value">
-                    </li>
-				</template>
-			</ul>
-		</div>
-	</div>
+	<div id="schema-tab">
+        <div is="object-details" :self="self" name="schema-tab"></div>
+    </div>
+	<div id="schema-list">
+        <div is="object-details" :self="self" name="schema-list"></div>
+    </div>
+	<div id="item-details">
+        <div is="object-details" :self="self" name="item-details"></div>
+    </div>
 </div>
 <script src="/static/js/index.js"></script>
 </body>

@@ -59,8 +59,12 @@ function SchemaAPI(endpoint) {
     var self = this;
     self.url = urlJoin(endpoint, "api/schemas");
     self.get = function (schema, success_callback, error_callback) {
+        var params = {};
         var request = new Request(success_callback, error_callback);
-        request.getJson(urlJoin(self.url, "", {schema: schema}));
+        if (schema) {
+            params.schema = schema;
+        }
+        request.getJson(urlJoin(self.url, "", params));
     };
 }
 
@@ -75,12 +79,67 @@ function ItemAPI(endpoint) {
     
     self.post = function (uri, data, success_callback, error_callback) {
         var request = new Request(success_callback, error_callback);
-        request.getJson(self.url, data);
-    };
-    
-    self.del = function (uri, success_callback, error_callback) {
-        var request = new Request(success_callback, error_callback);
-        request.del(urlJoin(self.url, "", {uri: uri}));
+        request.postJson(self.url, data);
     };
 }
 
+var endpoint = document.location.protocol + "//" + document.location.host + "/";
+
+Vue.component('object-details', {
+    template: '#object-details',
+    props: ['self', 'name'],
+});
+
+var schema_tab_view = new Vue({
+    el: "#schema-tab",
+    data: {
+        current_schema_name: null,
+        schemas: {},
+    },
+    computed: {
+        self: function () {
+            return this;
+        },
+    },
+});
+var item_list_view = new Vue({
+    el: "#schema-list",
+    data: {
+        current_schema_name: null,
+        items: {},
+    },
+    computed: {
+        self: function () {
+            return this;
+        },
+    },
+});
+var item_detail_view = new Vue({
+    el: "#item-details",
+    data: {
+        current_schema_name: null,
+        current_uri: null,
+    },
+    computed: {
+        self: function () {
+            return this;
+        },
+    },
+});
+
+var schema_api = new SchemaAPI(endpoint);
+schema_api.get("", function (request) {
+    var response = request.response;
+    if (!response.ok) {
+        console.log(response.message);
+        return;
+    }
+    for (schema of response.data) {
+        if (!schema_tab_view.current_schema_name) {
+            schema_tab_view.current_schema_name = schema.name;
+        }
+        Vue.set(schema_tab_view.schemas, schema.name, schema);
+    }
+}, function (request) {
+        alert("server has gone");
+});

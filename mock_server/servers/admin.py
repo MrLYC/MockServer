@@ -33,6 +33,7 @@ class IndexHandler(web.StaticFileHandler):
 class ApiHandlerMixin(object):
     SCHEMA_INFO = {
         "mock_http": {
+            "name": "HTTP",
             "request": [
                 "method", "path", "query_string:*", "http_header:*",
             ],
@@ -42,6 +43,7 @@ class ApiHandlerMixin(object):
             ],
         },
         "mock_tcp": {
+            "name": "TCP",
             "request": ["request"],
             "response": [
                 "greeting", "sep_regex", "data_type", "data", "close_stream",
@@ -98,6 +100,7 @@ class SchemaAdminHandler(ApiHandlerMixin, web.RequestHandler):
                 schema_info = schema_info.copy()
                 schema_info.update({
                     "items": items,
+                    "schema": schema,
                 })
                 result.append(schema_info)
             self.write_json(result)
