@@ -218,8 +218,8 @@ def init(server):
     application = web.Application(
         [
             (r"/?", IndexHandler),
-            (r"/schemas/?", SchemaAdminHandler),
-            (r"/items/?", ItemAdminHandler),
+            (r"/api/schemas/?", SchemaAdminHandler),
+            (r"/api/items/?", ItemAdminHandler),
         ],
         static_path=SETTINGS.STATIC_PATH,
         debug=SETTINGS.DEBUG,
