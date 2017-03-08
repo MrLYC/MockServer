@@ -13,6 +13,10 @@ function urlJoin(url, part, params) {
     return url;
 }
 
+function alert_message(message) {
+    alert(message);
+}
+
 function Request(success_callback, error_callback) {
     var self = this;
     self.success_callback = success_callback;
@@ -100,25 +104,56 @@ var schema_tab_view = new Vue({
         self: function () {
             return this;
         },
+        schema: function () {
+            return this.schemas[this.current_schema_name];
+        },
+    },
+    methods: {
+        init: function (default_name) {
+            var self = this;
+            var schema_api = new SchemaAPI(endpoint);
+            schema_api.get("", function (request) {
+                var response = request.response;
+                if (!response.ok) {
+                    alert_message(response.message);
+                    return;
+                }
+                for (schema of response.data) {
+                    if (schema.schema == default_name) {
+                        self.current_schema_name = schema.schema;
+                    }
+                    Vue.set(self.schemas, schema.schema, schema);
+                }
+            }, function (request) {
+                    alert_message("server has gone");
+            });
+        },
     },
 });
+
 var item_list_view = new Vue({
     el: "#schema-list",
     data: {
-        current_schema_name: null,
-        items: {},
+        schema: null,
+        item: null,
     },
     computed: {
         self: function () {
             return this;
         },
+        items: function () {
+            if (this.schema) {
+                return this.schema.items;
+            }
+        }
     },
 });
+
 var item_detail_view = new Vue({
     el: "#item-details",
     data: {
-        current_schema_name: null,
-        current_uri: null,
+        item: null,
+        schema: null,
     },
     computed: {
         self: function () {
@@ -127,19 +162,46 @@ var item_detail_view = new Vue({
     },
 });
 
-var schema_api = new SchemaAPI(endpoint);
-schema_api.get("", function (request) {
-    var response = request.response;
-    if (!response.ok) {
-        console.log(response.message);
-        return;
-    }
-    for (schema of response.data) {
-        if (!schema_tab_view.current_schema_name) {
-            schema_tab_view.current_schema_name = schema.name;
-        }
-        Vue.set(schema_tab_view.schemas, schema.name, schema);
-    }
-}, function (request) {
-        alert("server has gone");
-});
+var bridge = new Vue({
+    el: "#bridge",
+    data: {
+        schema: null,
+        item: null,
+    },
+    methods: {
+        onSchemaChange: function (schema) {
+            this.schema = schema;
+            item_detail_view.schema = schema;
+            item_list_view.schema = schema;
+            if (schema_tab_view.current_schema_name != schema.schema) {
+                schema_tab_view.current_schema_name = schema.schema;
+            }
+        },
+        onItemChange: function (item, schema) {
+            if (schema) {
+                this.onSchemaChange(schema);
+            }
+            this.item = item;
+            item_detail_view.item = item;
+            item_list_view.item = item;
+        },
+        setItemUri: function (uri) {
+            var api = new ItemAPI(endpoint);
+            var self = this;
+            api.get(uri, function (request) {
+                var response = request.response;
+                if (!response.ok) {
+                    alert_message(response.message);
+                    return;
+                }
+                if (response.data.length < 0) {
+                    alert_message("uri not found: " + uri);
+                    return;
+                }
+                self.onItemChange(response.data[0]);
+            }, alert_message);
+        },
+    },
+})
+
+schema_tab_view.init("mock_http");
