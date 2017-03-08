@@ -57,7 +57,7 @@ def parse_uri(uri):
     value = Word(nums + hexnums)
     value_type = Optional(Word("~-._", max=1), default="")
     value_item = (value_type + value)
-    key = Word(alphanums + "_-")
+    key = Word(alphanums + "_-:")
     hash_key = Word("!")
     item_sep = Literal("/")
     optional_item_sep = Optional(item_sep, default="/")
