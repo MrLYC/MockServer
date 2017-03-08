@@ -154,6 +154,8 @@ var item_detail_view = new Vue({
     data: {
         item: null,
         schema: null,
+        request: {},
+        response: {},
     },
     computed: {
         self: function () {
@@ -162,13 +164,27 @@ var item_detail_view = new Vue({
     },
 });
 
+
 var bridge = new Vue({
     el: "#bridge",
     data: {
         schema: null,
         item: null,
     },
+    computed: {
+        data: function () {
+            return {
+                schema: this.schema && this.schema.schema,
+                request: this.request,
+                response: this.response,
+            };
+        }
+    },
     methods: {
+        init: function () {
+            schema_tab_view.init("mock_http");
+            this.onSchemaChange(schema_tab_view.schema);
+        },
         onSchemaChange: function (schema) {
             this.schema = schema;
             item_detail_view.schema = schema;
@@ -184,6 +200,8 @@ var bridge = new Vue({
             this.item = item;
             item_detail_view.item = item;
             item_list_view.item = item;
+            this.request = {};
+            this.response = {};
         },
         setItemUri: function (uri) {
             var api = new ItemAPI(endpoint);
@@ -202,6 +220,5 @@ var bridge = new Vue({
             }, alert_message);
         },
     },
-})
-
-schema_tab_view.init("mock_http");
+});
+bridge.init();
