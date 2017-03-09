@@ -13,6 +13,7 @@ from tornado.escape import json_encode, json_decode
 from mock_server import SETTINGS
 from mock_server import cache
 from mock_server import utils
+from mock_server.servers import get_mock_schemas
 
 logger = logging.getLogger(__name__)
 
@@ -31,25 +32,7 @@ class IndexHandler(web.StaticFileHandler):
 
 
 class ApiHandlerMixin(object):
-    SCHEMA_INFO = {
-        "mock_http": {
-            "name": "HTTP",
-            "request": [
-                "method", "path", "query_string:*", "http_header:*",
-            ],
-            "response": [
-                "status_code", "status_reason", "cookie:*", "header:*",
-                "data_type", "data",
-            ],
-        },
-        "mock_tcp": {
-            "name": "TCP",
-            "request": ["request"],
-            "response": [
-                "greeting", "sep_regex", "data_type", "data", "close_stream",
-            ],
-        },
-    }
+    SCHEMA_INFO = get_mock_schemas()
 
     def initialize(self):
         self.cache = cache.Cache()
@@ -97,10 +80,9 @@ class SchemaAdminHandler(ApiHandlerMixin, web.RequestHandler):
                 if not schema_info:
                     continue
                 items = yield self.cache.list_uri_by_schema(schema)
-                schema_info = schema_info.copy()
+                schema_info = schema_info.as_dict()
                 schema_info.update({
                     "items": items,
-                    "schema": schema,
                 })
                 result.append(schema_info)
             self.write_json(result)
