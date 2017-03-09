@@ -25,22 +25,41 @@
 
 	<script type="text/x-template" id="component-mock-field">
 		<div class="mock-field">
-			<label class="mock-field-label">{{ field.name }}</label>
 			<template v-if="field.multiple">
-				<label>:</label>
-				<input
-					class="mock-field-input mock-field-xname input-box"
-					type="string"
-					v-model="xname"
-				/>
-				<input
-					class="mock-field-input input-box"
-					type="string"
-					v-model="xvalue"
-				/>
-				<button @click="setXValue" class="mock-field-button">ok</button>
+				<div>
+					<h5>{{ field.name }}</h5>
+					<ul class="mock-field-extend">
+						<li v-for="(xfield, name) in xfields">
+							<mock-field :field="xfield" :model="model">
+							</mock-field>
+							<button
+								@click="delXValue(name)"
+								class="mock-field-button"
+							>x</button>
+						</li>
+						<li>
+							<input
+								class="mock-field-input mock-field-xname input-box"
+								type="string"
+								v-model="xname"
+								:placeholder="field.name + ':*'"
+							/>
+							<input
+								class="mock-field-input input-box"
+								type="string"
+								v-model="xvalue"
+								placeholder="*"
+							/>
+							<button
+								@click="setXValue"
+								class="mock-field-button"
+							>+</button>
+						</li>
+					</ul>
+				</div>
 			</template>
 			<template v-else>
+				<label class="mock-field-label">{{ field.name }}</label>
 				<select
 					v-if="field.enum"
 					class="mock-field-input select-box"
@@ -57,6 +76,7 @@
 					type="number"
 					:value="model[field.name]"
 					@input="model[field.name] = $event.target.value"
+					:placeholder="field.type"
 				/>
 				<input
 					v-else-if="field.type == 'string'"
@@ -64,6 +84,7 @@
 					type="string"
 					:value="model[field.name]"
 					@input="model[field.name] = $event.target.value"
+					:placeholder="field.type"
 				/>
 				<input
 					v-else-if="field.type == 'boolean'"
@@ -71,12 +92,14 @@
 					type="checkbox"
 					:value="model[field.name]"
 					@input="model[field.name] = $event.target.value"
+					:placeholder="field.type"
 				/>
 				<textarea
 					v-else
 					class="mock-field-input text-box"
 					:value="model[field.name]"
 					@input="model[field.name] = $event.target.value"
+					:placeholder="field.type"
 				>
 				</textarea>
 			</template>
@@ -91,16 +114,28 @@
 					old_xname: "",
 					xname: "",
 					xvalue: "",
+					xfields: {},
 				};
 			},
 			methods: {
 				setXValue: function () {
-					if (this.old_xname) {
-						delete this.model[this.old_xname];
+					if (!this.xname) {
+						return;
 					}
 					var xname = this.field.name + ":" + this.xname;
-					this.old_xname = xname;
 					this.model[xname] = this.xvalue;
+					this.xname = "";
+					this.xvalue = "";
+					Vue.set(this.xfields, xname, {
+						name: xname,
+						type: this.field.type,
+						default: "",
+						multiple: false,
+					});
+				},
+				delXValue: function (xname) {
+					Vue.delete(this.model, xname);
+					Vue.delete(this.xfields, xname);
 				}
 			},
 		});
@@ -108,9 +143,9 @@
 
 	<script type="text/x-template" id="component-mock-details">
 		<div class="mock-details">
-			<h4 class="mock-details-title">{{ schema.name }}</h4>
+			<h3 class="mock-details-title">{{ schema.name }}</h3>
 			<div class="mock-details-request">
-				<h5 class="mock-details-request-title">Request</h5>
+				<h4 class="mock-details-request-title">Request</h4>
 				<ul class="mock-details-request-fields">
 					<li v-for="field in schema.request_fields">
 						<mock-field :field="field" :model="model"></mock-field>
@@ -118,7 +153,7 @@
 				</ul>
 			</div>
 			<div class="mock-details-response">
-				<h5 class="mock-details-request-title">Response</h5>
+				<h4 class="mock-details-request-title">Response</h4>
 				<ul class="mock-details-response-fields">
 					<li v-for="field in schema.response_fields">
 						<mock-field :field="field" :model="model"></mock-field>
