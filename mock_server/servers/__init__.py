@@ -6,14 +6,17 @@ undefined = frozenset("undefined")
 
 
 class MockField(object):
+
     def __init__(
-        self, name, type, enum=None, default=undefined, multiple=False,
+        self, name, type, enum=None, default=undefined,
+        multiple=False, rich_text=False,
     ):
         self.name = name
         self.type = type
         self.enum = enum
         self.default = default
         self.multiple = multiple
+        self.rich_text = rich_text
 
     @property
     def field_regex(self):
@@ -33,6 +36,7 @@ class MockField(object):
             "type": self.type,
             "multiple": self.multiple,
             "enum": self.enum,
+            "rich_text": self.rich_text,
         }
         if self.default is not undefined:
             info["default"] = self.default

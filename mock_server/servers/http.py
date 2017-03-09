@@ -26,6 +26,10 @@ HTTP_SCHEMA = MockCacheSchema.register(
         "path": {
             "type": "string",
         },
+        "data": {
+            "type": "string",
+            "rich_text": True,
+        },
         "query_string": {
             "type": "string",
             "multiple": True,
@@ -38,10 +42,6 @@ HTTP_SCHEMA = MockCacheSchema.register(
     {
         "name": {
             "type": "string",
-        },
-        "data": {
-            "type": "string",
-            "default": "",
         },
         "data_type": {
             "type": "string",

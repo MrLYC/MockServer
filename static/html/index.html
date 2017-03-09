@@ -63,8 +63,7 @@
 				<select
 					v-if="field.enum"
 					class="mock-field-input select-box"
-					:value="model[field.name]"
-					@input="model[field.name] = $event.target.value"
+					v-model="model[field.name]"
 				>
 					<option v-for="i in field.enum">
 						{{ i }}
@@ -74,31 +73,27 @@
 					v-else-if="field.type == 'number'"
 					class="mock-field-input input-box"
 					type="number"
-					:value="model[field.name]"
-					@input="model[field.name] = $event.target.value"
-					:placeholder="field.type"
-				/>
-				<input
-					v-else-if="field.type == 'string'"
-					class="mock-field-input input-box"
-					type="string"
-					:value="model[field.name]"
-					@input="model[field.name] = $event.target.value"
+					v-model="model[field.name]"
 					:placeholder="field.type"
 				/>
 				<input
 					v-else-if="field.type == 'boolean'"
 					class="mock-field-input check-box"
 					type="checkbox"
-					:value="model[field.name]"
-					@input="model[field.name] = $event.target.value"
+					v-model="model[field.name]"
+					:placeholder="field.type"
+				/>
+				<input
+					v-else-if="field.type == 'string' && !field.rich_text"
+					class="mock-field-input input-box"
+					type="string"
+					v-model="model[field.name]"
 					:placeholder="field.type"
 				/>
 				<textarea
 					v-else
 					class="mock-field-input text-box"
-					:value="model[field.name]"
-					@input="model[field.name] = $event.target.value"
+					v-model="model[field.name]"
 					:placeholder="field.type"
 				>
 				</textarea>
@@ -147,7 +142,7 @@
 			<div class="mock-details-request">
 				<h4 class="mock-details-request-title">Request</h4>
 				<ul class="mock-details-request-fields">
-					<li v-for="field in schema.request_fields">
+					<li v-for="field in sorted_fields(schema.request_fields)">
 						<mock-field :field="field" :model="model"></mock-field>
 					</li>
 				</ul>
@@ -155,7 +150,7 @@
 			<div class="mock-details-response">
 				<h4 class="mock-details-request-title">Response</h4>
 				<ul class="mock-details-response-fields">
-					<li v-for="field in schema.response_fields">
+					<li v-for="field in sorted_fields(schema.response_fields)">
 						<mock-field :field="field" :model="model"></mock-field>
 					</li>
 				</ul>
@@ -166,6 +161,39 @@
 		Vue.component("mock-details", {
 			template: "#component-mock-details",
 			props: ["schema", "model"],
+			methods: {
+				sorted_fields: function (fields) {
+					var field_list = [];
+					for (f in fields) {
+						if (fields.hasOwnProperty(f)) {
+							field_list.push(fields[f]);
+						}
+					}
+					field_list.sort(function (x, y) {
+						if (x.multiple != y.multiple) {
+							if (x.multiple) {
+								return 1;
+							}
+							else {
+								return -1;
+							}
+						}
+						if (x.rich_text != y.rich_text) {
+							if (x.rich_text) {
+								return 1;
+							}
+							else {
+								return -1;
+							}
+						}
+						if (x.type != y.type) {
+							return x.type.localeCompare(y.type);
+						}
+						return x.name.localeCompare(y.name);
+					});
+					return field_list;
+				}
+			},
 		});
 	</script>
 </head>
