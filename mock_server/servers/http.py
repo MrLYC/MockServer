@@ -36,6 +36,9 @@ HTTP_SCHEMA = MockCacheSchema.register(
         },
     },
     {
+        "name": {
+            "type": "string",
+        },
         "data": {
             "type": "string",
             "default": "",
@@ -45,7 +48,7 @@ HTTP_SCHEMA = MockCacheSchema.register(
             "default": "",
         },
         "status_code": {
-            "type": "integer",
+            "type": "number",
             "default": 200,
         },
         "status_reason": {

@@ -23,6 +23,9 @@ TCP_SCHEMA = MockCacheSchema.register(
         },
     },
     {
+        "name": {
+            "type": "string",
+        },
         "greeting": {
             "type": "string",
             "default": "",
@@ -40,7 +43,7 @@ TCP_SCHEMA = MockCacheSchema.register(
             "default": "",
         },
         "close_stream": {
-            "type": "integer",
+            "type": "number",
             "default": False,
         },
         Cache.TEMPLATE_REF_KEY: {

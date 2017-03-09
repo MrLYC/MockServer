@@ -1,39 +1,126 @@
 <html>
 <head>
+	<title>Mock Server</title>
 	<script src="https://unpkg.com/vue/dist/vue.js"></script>
-    <script type="text/x-template" id="object-details">
-        <div>
-            <template v-if="self instanceof Array">
-                <ol>
-                    <li v-for="v of self" v-if="v != self">
-                        <span v-if="typeof v != 'object'">{{ v }}</span>
-                    </li>
-                </ol>
-            </template>
-            <template v-else>
-                <ul>
-                    <li v-for="(v, k) of self" v-if="!k.startsWith('$') && !k.startsWith('_') && v != self">
-                        <span>{{ k }}</span>:
-                        <span v-if="typeof v != 'object'">{{ v }}</span>
-                        <div is="object-details" :self="v" v-else></div>
-                    </li>
-                </ul>
-            </template>
-        </div>
-    </script>
+	<script type="text/x-template" id="object-details">
+		<div>
+			<template v-if="self instanceof Array">
+				<ol>
+					<li v-for="v of self" v-if="v != self">
+						<span v-if="typeof v != 'object'">{{ v }}</span>
+					</li>
+				</ol>
+			</template>
+			<template v-else>
+				<ul>
+					<li v-for="(v, k) of self" v-if="!k.startsWith('$') && !k.startsWith('_') && v != self">
+						<span>{{ k }}</span>:
+						<span v-if="typeof v != 'object'">{{ v }}</span>
+						<div is="object-details" :self="v" v-else></div>
+					</li>
+				</ul>
+			</template>
+		</div>
+	</script>
+
+	<script type="text/x-template" id="component-mock-field">
+		<div class="mock-field">
+			<label class="mock-field-label">{{ field.name }}</label>
+			<template v-if="field.multiple">
+				<label>:</label>
+				<input
+					class="mock-field-input mock-field-xname input-box"
+					type="string"
+					v-model="xname"
+				/>
+				<input
+					class="mock-field-input input-box"
+					type="string"
+					v-model="xvalue"
+				/>
+				<button @click="setXValue" class="mock-field-button">ok</button>
+			</template>
+			<template v-else>
+				<select
+					v-if="field.enum"
+					class="mock-field-input select-box"
+					:value="model[field.name]"
+					@input="model[field.name] = $event.target.value"
+				>
+					<option v-for="i in field.enum" value="i">
+						{{ i }}
+					</option>
+				</select>
+				<input
+					v-else-if="field.type == 'number'"
+					class="mock-field-input input-box"
+					type="number"
+					:value="model[field.name]"
+					@input="model[field.name] = $event.target.value"
+				/>
+				<input
+					v-else-if="field.type == 'string'"
+					class="mock-field-input input-box"
+					type="string"
+					:value="model[field.name]"
+					@input="model[field.name] = $event.target.value"
+				/>
+				<input
+					v-else-if="field.type == 'boolean'"
+					class="mock-field-input check-box"
+					type="checkbox"
+					:value="model[field.name]"
+					@input="model[field.name] = $event.target.value"
+				/>
+				<textarea
+					v-else
+					class="mock-field-input text-box"
+					:value="model[field.name]"
+					@input="model[field.name] = $event.target.value"
+				>
+				</textarea>
+			</template>
+		</div>
+	</script>
+	<script>
+		Vue.component("mock-field", {
+			template: "#component-mock-field",
+			props: ["field", "model"],
+			data: function () {
+				return {
+					old_xname: "",
+					xname: "",
+					xvalue: "",
+				};
+			},
+			methods: {
+				setXValue: function () {
+					if (this.old_xname) {
+						delete this.model[this.old_xname];
+					}
+					var xname = this.field.name + ":" + this.xname;
+					this.old_xname = xname;
+					this.model[xname] = this.xvalue;
+				}
+			},
+		});
+	</script>
 </head>
 <body>
-<div id="main">
-    <input id="bridge" type="hidden">
+	<div id="test">
+		<mock-field :field="field" :model="model"></mock-field>
+	</div>
+<div id="main" style="display: none">
+	<input id="bridge" type="hidden">
 	<div id="schema-tab">
-        <div is="object-details" :self="self" name="schema-tab"></div>
-    </div>
+		<div is="object-details" :self="self" name="schema-tab"></div>
+	</div>
 	<div id="schema-list">
-        <div is="object-details" :self="self" name="schema-list"></div>
-    </div>
+		<div is="object-details" :self="self" name="schema-list"></div>
+	</div>
 	<div id="item-details">
-        <div is="object-details" :self="self" name="item-details"></div>
-    </div>
+		<div is="object-details" :self="self" name="item-details"></div>
+	</div>
 </div>
 <script src="/static/js/index.js"></script>
 </body>
