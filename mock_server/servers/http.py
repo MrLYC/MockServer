@@ -20,21 +20,18 @@ HTTP_SCHEMA = MockCacheSchema.register(
     {
         "method": {
             "type": "string",
-            "enum": ["GET", "POST"],
+            "enum": ["GET", "POST", "PUT", "DELETE", "HEADER", "PATCH"],
             "default": "GET",
         },
         "path": {
             "type": "string",
-            "default": "",
         },
         "query_string": {
             "type": "string",
-            "default": None,
             "multiple": True,
         },
         "http_header": {
             "type": "string",
-            "default": None,
             "multiple": True,
         },
     },

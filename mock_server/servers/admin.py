@@ -17,6 +17,8 @@ from mock_server.servers import get_mock_schemas
 
 logger = logging.getLogger(__name__)
 
+SCHEMA_INFO = get_mock_schemas()
+
 
 class IndexHandler(web.StaticFileHandler):
     FILE_PATH = "html/index.html"
@@ -32,7 +34,6 @@ class IndexHandler(web.StaticFileHandler):
 
 
 class ApiHandlerMixin(object):
-    SCHEMA_INFO = get_mock_schemas()
 
     def initialize(self):
         self.cache = cache.Cache()
@@ -40,8 +41,7 @@ class ApiHandlerMixin(object):
     def get_request_params(self):
         return {}
 
-    def check_params(self, validate_schema, params):
-        validator = Validator(validate_schema)
+    def check_params(self, validator, params):
         try:
             validator.validate(params)
         except ValidationError as err:
@@ -74,9 +74,9 @@ class SchemaAdminHandler(ApiHandlerMixin, web.RequestHandler):
             request_params = self.get_request_params()
             result = []
             for schema in (
-                request_params.get("schemas") or self.SCHEMA_INFO.keys()
+                request_params.get("schemas") or SCHEMA_INFO.keys()
             ):
-                schema_info = self.SCHEMA_INFO.get(schema)
+                schema_info = SCHEMA_INFO.get(schema)
                 if not schema_info:
                     continue
                 items = yield self.cache.list_uri_by_schema(schema)
@@ -92,23 +92,9 @@ class SchemaAdminHandler(ApiHandlerMixin, web.RequestHandler):
 
 
 class ItemAdminHandler(ApiHandlerMixin, web.RequestHandler):
-    POST_SCHEMA = {
-        "type": "object",
-        "required": ["schema", "request", "response"],
-        "properties": {
-            "schema": {
-                "type": "string",
-                "enum": ["mock_tcp", "mock_http"],
-            },
-            "request": {
-                "type": "object",
-                "minProperties": 1,
-            },
-            "response": {
-                "type": "object",
-                "minProperties": 1,
-            },
-        },
+    POST_SCHEMAS = {
+        s.schema: Validator(s.as_json_schema())
+        for s in SCHEMA_INFO.values()
     }
 
     def get_request_params(self):
@@ -124,20 +110,21 @@ class ItemAdminHandler(ApiHandlerMixin, web.RequestHandler):
         }
 
     @gen.coroutine
-    def get_uri_info(self, uri, **ex_data):
+    def get_uri_info(self, uri, schema_info=None, **ex_data):
         data = yield self.cache.get_data(uri)
         if not data:
             raise gen.Return(None)
         uri_info = utils.parse_uri(uri)
+        schema_info = schema_info or SCHEMA_INFO.get(uri_info.schema)
         result = {
             "uri": uri,
-            "schema": uri_info.schema,
+            "schema": schema_info.schema,
             "strict": uri_info.strict,
-            "request": {
+            "uri_info": {
                 k: utils.parse_uri_item(v)
                 for k, v in uri_info.items.items()
             },
-            "response": {
+            "items": {
                 k: v.decode(SETTINGS.ENCODING)
                 for k, v in data.items()
             }
@@ -167,18 +154,37 @@ class ItemAdminHandler(ApiHandlerMixin, web.RequestHandler):
             self.write_json(None, ok=False, message="parse json failed")
             raise gen.Return()
 
-        error = self.check_params(self.POST_SCHEMA, params)
+        schema = params.get("schema")
+        schema_info = SCHEMA_INFO.get(schema)
+        json_schema = self.POST_SCHEMAS.get(schema_info.schema)
+        if not json_schema or not schema_info:
+            self.write_json(
+                None, ok=False,
+                message="unkonwn schema: %s" % schema,
+            )
+            raise gen.Return()
+
+        error = self.check_params(json_schema, params)
         if error:
             self.write_json(None, ok=False, message=error)
             raise gen.Return()
 
+        request_params = {}
+        for k, v in params.items():
+            if k in schema_info.request_fields:
+                request_params[k] = v
+            else:
+                field, _, key = k.partition(":")
+                field_info = schema_info.request_fields.get(field)
+                if field_info and field_info.multiple:
+                    request_params[k] = v
         uri = utils.get_uri(
-            schema=params.get("schema"),
-            items=params.get("request"),
+            schema=schema_info.schema,
+            items=request_params,
         )
-        for k, v in params.get("response").items():
+        for k, v in params.items():
             yield self.cache.set_data(uri, v, k)
-        uri_info = yield self.get_uri_info(uri)
+        uri_info = yield self.get_uri_info(uri, schema_info)
         self.write_json(uri_info)
 
     @gen.coroutine
