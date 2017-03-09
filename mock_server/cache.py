@@ -14,6 +14,15 @@ from mock_server import SETTINGS
 logger = logging.getLogger(__name__)
 
 
+class CacheValue(object):
+    true = b"1"
+    false = b"0"
+
+    t_raw = b""
+    t_base64 = b"base64"
+    t_static_file = b"static_file"
+
+
 class SyncRedis(Redis):
     GLOBAL_INSTANCE = None
     GLOBAL_INIT_LOCK = RLock()
@@ -91,7 +100,7 @@ class Cache(object):
         uri_data = yield self._get_all(uri)
         data = {}
         template_uri = uri_data.get(self.TEMPLATE_REF_KEY)
-        if template_uri:
+        if template_uri and uri != template_uri.decode(SETTINGS.ENCODING):
             template_data = yield self.get_data(
                 template_uri.decode(SETTINGS.ENCODING),
             )

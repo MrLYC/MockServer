@@ -8,8 +8,8 @@ from tornado import web
 from tornado import gen
 
 from mock_server import SETTINGS
-from mock_server import cache
 from mock_server import utils
+from mock_server.cache import Cache, CacheValue
 from mock_server.servers import MockCacheSchema
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ HTTP_SCHEMA = MockCacheSchema.register(
             "type": "string",
             "multiple": True,
         },
-        "$ref": {
+        Cache.TEMPLATE_REF_KEY: {
             "type": "string",
         },
     },
@@ -70,11 +70,6 @@ HTTP_SCHEMA = MockCacheSchema.register(
 )
 
 
-class MockDataType(object):
-    static_file = b"static_file"
-    base64 = b"base64"
-
-
 class MockHandler(web.RequestHandler):
 
     IDENT_HEDERS = {
@@ -82,7 +77,7 @@ class MockHandler(web.RequestHandler):
     }
 
     def initialize(self):
-        self.cache = cache.Cache()
+        self.cache = Cache()
 
     @gen.coroutine
     def service_static_file(self, response_info):
@@ -115,9 +110,9 @@ class MockHandler(web.RequestHandler):
 
         data_type = response_info.get(HTTP_SCHEMA.F_RSP_DATA_TYPE)
         data = response_info.get(HTTP_SCHEMA.F_RSP_DATA, "")
-        if data_type == MockDataType.static_file:
+        if data_type == CacheValue.t_static_file:
             yield self.service_static_file(response_info)
-        elif data_type == MockDataType.base64:
+        elif data_type == CacheValue.t_base64:
             self.write(base64.decodebytes(data))
         elif data:
             self.write(data)

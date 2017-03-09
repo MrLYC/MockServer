@@ -2,7 +2,6 @@
 
 import re
 
-
 undefined = frozenset("undefined")
 
 

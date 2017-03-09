@@ -8,7 +8,7 @@ from tornado import gen
 from tornado.iostream import StreamClosedError
 
 from mock_server import SETTINGS
-from mock_server.cache import Cache
+from mock_server.cache import Cache, CacheValue
 from mock_server import utils
 from mock_server.servers import MockCacheSchema
 
@@ -39,23 +39,18 @@ TCP_SCHEMA = MockCacheSchema.register(
             "type": "string",
             "default": "",
         },
-        "allow_empty_request": {
-            "type": "boolean",
+        "close_stream": {
+            "type": "integer",
             "default": False,
         },
-        "close_stream": {
-            "type": "boolean",
-            "default": False,
+        Cache.TEMPLATE_REF_KEY: {
+            "type": "string",
         },
     },
 )
 
 
 class MockTCPHandler(object):
-    CACHE_BOOLEAN = {
-        b"yes": True,
-        b"no": False,
-    }
 
     def __init__(self, stream, address, port, cache=None):
         self.stream = stream
@@ -91,12 +86,10 @@ class MockTCPHandler(object):
     def run(self):
         stream = self.stream
         stream.set_close_callback(self.on_close)
-        mock_tcp_config = yield self.cache.get_data(TCP_SCHEMA.schema)
-        greeting = mock_tcp_config.get(TCP_SCHEMA.F_REQ_GREETING)
-        sep_regex = mock_tcp_config.get(TCP_SCHEMA.F_REQ_SEP_REGEX, b"\n")
-        allow_empty_request = self.CACHE_BOOLEAN.get(
-            mock_tcp_config.get(TCP_SCHEMA.F_REQ_ALLOW_EMPTY_REQUEST), False,
-        )
+        uri = self.make_uri_from_request(b"")
+        mock_tcp_config = yield self.cache.get_data(uri)
+        greeting = mock_tcp_config.get(TCP_SCHEMA.F_RSP_GREETING)
+        sep_regex = mock_tcp_config.get(TCP_SCHEMA.F_RSP_SEP_REGEX, b"\n")
 
         try:
             if greeting:
@@ -104,19 +97,20 @@ class MockTCPHandler(object):
 
             while not stream.closed():
                 request = yield stream.read_until_regex(sep_regex)
-                if not request and not allow_empty_request:
+                if not request:
                     self.close_stream()
+                    break
                 response_info = yield self.make_response(request)
-                data = response_info.get(TCP_SCHEMA.F_REQ_DATA, b"")
-                data_type = response_info.get(TCP_SCHEMA.F_REQ_DATA_TYPE)
+                data = response_info.get(TCP_SCHEMA.F_RSP_DATA, b"")
+                data_type = response_info.get(TCP_SCHEMA.F_RSP_DATA_TYPE)
+                close_stream = response_info.get(
+                    TCP_SCHEMA.F_RSP_CLOSE_STREAM, CacheValue.false,
+                )
                 if data:
-                    if data_type == b"base64":
+                    if data_type == CacheValue.t_base64:
                         data = base64.decodebytes(data)
                     yield stream.write(data)
-                close_stream = self.CACHE_BOOLEAN.get(
-                    response_info.get(TCP_SCHEMA.F_REQ_CLOSE_STREAM), False,
-                )
-                if close_stream:
+                if close_stream == CacheValue.true:
                     self.close_stream()
         except StreamClosedError:
             pass

@@ -21,7 +21,7 @@ def get_uri_item(key, value, strict=False, encoding="utf-8"):
     if len(value) >= SETTINGS.AUTO_STRICT_ITEM_LENGTH and not strict:
         value = "~%s" % hashlib.md5(value).hexdigest()
     else:
-        value = "".join("%x" % i for i in value)
+        value = "".join("%02x" % i for i in value)
 
     return "%s=%s" % (key, value)
 
