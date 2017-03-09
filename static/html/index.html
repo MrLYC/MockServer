@@ -47,7 +47,7 @@
 					:value="model[field.name]"
 					@input="model[field.name] = $event.target.value"
 				>
-					<option v-for="i in field.enum" value="i">
+					<option v-for="i in field.enum">
 						{{ i }}
 					</option>
 				</select>
@@ -105,10 +105,38 @@
 			},
 		});
 	</script>
+
+	<script type="text/x-template" id="component-mock-details">
+		<div class="mock-details">
+			<h4 class="mock-details-title">{{ schema.name }}</h4>
+			<div class="mock-details-request">
+				<h5 class="mock-details-request-title">Request</h5>
+				<ul class="mock-details-request-fields">
+					<li v-for="field in schema.request_fields">
+						<mock-field :field="field" :model="model"></mock-field>
+					</li>
+				</ul>
+			</div>
+			<div class="mock-details-response">
+				<h5 class="mock-details-request-title">Response</h5>
+				<ul class="mock-details-response-fields">
+					<li v-for="field in schema.response_fields">
+						<mock-field :field="field" :model="model"></mock-field>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</script>
+	<script>
+		Vue.component("mock-details", {
+			template: "#component-mock-details",
+			props: ["schema", "model"],
+		});
+	</script>
 </head>
 <body>
 	<div id="test">
-		<mock-field :field="field" :model="model"></mock-field>
+		<mock-details :schema="schema" :model="model"></mock-details>
 	</div>
 <div id="main" style="display: none">
 	<input id="bridge" type="hidden">
