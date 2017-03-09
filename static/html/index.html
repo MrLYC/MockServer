@@ -65,7 +65,7 @@
 					class="mock-field-input select-box"
 					v-model="model[field.name]"
 				>
-					<option v-for="i in field.enum">
+					<option v-for="i in field.enum" :value="i">
 						{{ i }}
 					</option>
 				</select>

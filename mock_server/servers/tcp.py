@@ -44,7 +44,8 @@ TCP_SCHEMA = MockCacheSchema.register(
         },
         "close_stream": {
             "type": "number",
-            "default": False,
+            "enum": ["0", "1"],
+            "default": "0",
         },
         Cache.TEMPLATE_REF_KEY: {
             "type": "string",
