@@ -36,7 +36,8 @@ TCP_SCHEMA = MockCacheSchema.register(
         },
         "data_type": {
             "type": "string",
-            "default": "",
+            "enum": ["raw", "static_file", "base64"],
+            "default": "raw",
         },
         "sep_regex": {
             "type": "string",

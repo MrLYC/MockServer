@@ -87,13 +87,15 @@
 					v-else-if="field.type == 'string' && !field.rich_text"
 					class="mock-field-input input-box"
 					type="string"
-					v-model="model[field.name]"
+					:value="model[field.name]"
+					@input="setValue($event.target)"
 					:placeholder="field.type"
 				/>
 				<textarea
 					v-else
 					class="mock-field-input text-box"
-					v-model="model[field.name]"
+					:value="model[field.name]"
+					@input="setValue($event.target)"
 					:placeholder="field.type"
 				>
 				</textarea>
@@ -113,6 +115,16 @@
 				};
 			},
 			methods: {
+				setValue: function (target) {
+					if (target.value && this.field.pattern) {
+						if (!target.value.match(this.field.pattern)) {
+							this.$emit("mock-field-input-error", this);
+							target.value = this.model[this.field.name];
+							return;
+						}
+					}
+					Vue.set(this.model, this.field.name, target.value);
+				},
 				setXValue: function () {
 					if (!this.xname) {
 						return;

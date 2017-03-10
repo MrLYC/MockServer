@@ -18,7 +18,7 @@ class CacheValue(object):
     true = b"1"
     false = b"0"
 
-    t_raw = b""
+    t_raw = b"raw"
     t_base64 = b"base64"
     t_static_file = b"static_file"
 

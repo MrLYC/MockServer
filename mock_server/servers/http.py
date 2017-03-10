@@ -25,6 +25,7 @@ HTTP_SCHEMA = MockCacheSchema.register(
         },
         "path": {
             "type": "string",
+            "pattern": r"^([^?#]*)?$",
         },
         "body": {
             "type": "string",
@@ -32,6 +33,7 @@ HTTP_SCHEMA = MockCacheSchema.register(
         "query_string": {
             "type": "string",
             "multiple": True,
+            "pattern": r"^([^#]*)?$",
         },
         "http_header": {
             "type": "string",
@@ -48,7 +50,8 @@ HTTP_SCHEMA = MockCacheSchema.register(
         },
         "data_type": {
             "type": "string",
-            "default": "",
+            "enum": ["raw", "static_file", "base64"],
+            "default": "raw",
         },
         "status_code": {
             "type": "number",

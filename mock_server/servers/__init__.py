@@ -9,7 +9,7 @@ class MockField(object):
 
     def __init__(
         self, name, type, enum=None, default=undefined,
-        multiple=False, rich_text=False,
+        multiple=False, rich_text=False, pattern=undefined,
     ):
         self.name = name
         self.type = type
@@ -17,6 +17,7 @@ class MockField(object):
         self.default = default
         self.multiple = multiple
         self.rich_text = rich_text
+        self.pattern = pattern
 
     @property
     def field_regex(self):
@@ -40,6 +41,8 @@ class MockField(object):
         }
         if self.default is not undefined:
             info["default"] = self.default
+        if self.pattern is not undefined:
+            info["pattern"] = self.pattern
         return info
 
     def as_json_schema(self):
