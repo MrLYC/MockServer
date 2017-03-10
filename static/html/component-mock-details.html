@@ -1,0 +1,19 @@
+<div class="mock-details">
+    <h3 class="mock-details-title">{{ schema.name }}</h3>
+    <div class="mock-details-request">
+        <h4 class="mock-details-request-title">Request</h4>
+        <ul class="mock-details-request-fields">
+            <li v-for="field in sorted_fields(schema.request_fields)">
+                <mock-field :field="field" :model="model"></mock-field>
+            </li>
+        </ul>
+    </div>
+    <div class="mock-details-response">
+        <h4 class="mock-details-request-title">Response</h4>
+        <ul class="mock-details-response-fields">
+            <li v-for="field in sorted_fields(schema.response_fields)">
+                <mock-field :field="field" :model="model"></mock-field>
+            </li>
+        </ul>
+    </div>
+</div>

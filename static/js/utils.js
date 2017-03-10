@@ -12,11 +12,11 @@ var MockServerUtils = new function() {
             url = url + "?" + values.join("&");
         }
         return url;
-    }
+    };
 
     var alertMessage = this.alertMessage = function(message) {
         alert(message);
-    }
+    };
 
     var Request = this.Request = function(success_callback, error_callback) {
         var self = this;
@@ -42,25 +42,61 @@ var MockServerUtils = new function() {
             }
         };
 
-        self.del = function(url, params) {
+        self.send = function(url, method, params, data, response_type, content_type) {
             var request = self.request;
-            request.open("DELETE", urlJoin(url, "", params), true);
-            request.send();
+            if (params) {
+                url = urlJoin(url, "", params);
+            }
+            request.open(method, url, true);
+            if (content_type) {
+                request.setRequestHeader("Content-Type", content_type);
+            }
+            if (response_type) {
+                request.responseType = response_type;
+            }
+            request.send(data);
+        };
+
+        self.get = function(url, params, response_type) {
+            self.send(url, "GET", params, undefined, response_type);
+        };
+
+        self.post = function(url, params, data, response_type, content_type) {
+            self.send(
+                url, "POST", params, data, response_type, content_type
+            );
+        };
+
+        self.del = function(url, params) {
+            self.send(url, "DELETE", params);
         };
 
         self.postJson = function(url, data) {
-            var request = self.request;
-            request.open("POST", url, true);
-            request.setRequestHeader("Content-Type", "application/json");
-            request.responseType = "json";
-            request.send(JSON.stringify(data));
+            self.send(
+                url, "POST", undefined, JSON.stringify(data),
+                "json", "application/json"
+            );
         };
 
         self.getJson = function(url, params) {
-            var request = self.request;
-            request.responseType = "json";
-            request.open("GET", urlJoin(url, "", params), true);
-            request.send();
+            self.send(url, "GET", params, undefined, "json");
         };
+
+        self.getText = function(url, params) {
+            self.send(url, "GET", params, undefined, "text");
+        };
+    };
+
+    this.loadTemplate = function(url, success_callback, error_callback) {
+        var error_callback = error_callback || function(request) {
+            alertMessage(request.response);
+        };
+        var request = new MockServerUtils.Request(
+            function(req) {
+                success_callback(req.response);
+            },
+            error_callback
+        );
+        request.getText(url);
     }
 };
