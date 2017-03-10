@@ -159,6 +159,8 @@ class MockHandler(web.RequestHandler):
             for k, v in self.request.query_arguments.items()
         })
 
+        kwargs[HTTP_SCHEMA.F_REQ_BODY] = request.body
+
         headers = self.request.headers
         kwargs.update({
             "%s:%s" % (HTTP_SCHEMA.F_REQ_HTTP_HEADER, k): headers.get(k, d)
