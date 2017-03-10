@@ -2,6 +2,7 @@
 
 import logging
 import base64
+import os
 
 from tornado import httpserver
 from tornado import web
@@ -73,9 +74,8 @@ HTTP_SCHEMA = MockCacheSchema.register(
             "type": "string",
         },
     },
-    [
-        "X-MockServer-URI", "X-MockServer-Status",
-    ]
+    E_X_MOCKSERVER_URI="X-MockServer-URI",
+    E_X_MOCKSERVER_STATUS="X-MockServer-Status",
 )
 
 
@@ -90,7 +90,14 @@ class MockHandler(web.RequestHandler):
 
     @gen.coroutine
     def service_static_file(self, response_info):
-        with open(response_info.get(HTTP_SCHEMA.F_RSP_DATA), "rb") as fp:
+        data = response_info.get(HTTP_SCHEMA.F_RSP_DATA)
+        if data:
+            data = data.decode(SETTINGS.ENCODING)
+        else:
+            data = "data.dat"
+
+        path = os.path.join(SETTINGS.STATIC_PATH, data)
+        with open(path, "rb") as fp:
             while True:
                 chunk = fp.read(SETTINGS.BUFFER_SIZE)
                 if not chunk:

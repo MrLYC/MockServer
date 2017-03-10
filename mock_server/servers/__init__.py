@@ -61,7 +61,7 @@ class MockCacheSchema(object):
 
     @classmethod
     def register(
-        cls, schema, name, request_fields, response_fields, extend_headers=(),
+        cls, schema, name, request_fields, response_fields, **extend_attrs
     ):
         schema_instance = cls(
             schema=schema,
@@ -74,7 +74,7 @@ class MockCacheSchema(object):
                 k: MockField(k, **i)
                 for k, i in response_fields.items()
             },
-            extend_headers=extend_headers,
+            **extend_attrs
         )
         cls.REGISTERED_SCHEMAS[schema] = schema_instance
         return schema_instance
@@ -98,7 +98,7 @@ class MockCacheSchema(object):
             setattr(self, "F_RSP_%s" % k.upper().replace("-", "_"), k)
 
         for k, v in extend_attrs.items():
-            setattr(self, "E_%s" % k.upper().replace("-", "_"), v)
+            setattr(self, k.upper().replace("-", "_"), v)
 
     def __str__(self):
         return str(self.as_dict())
