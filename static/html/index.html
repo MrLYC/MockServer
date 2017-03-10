@@ -27,15 +27,17 @@
 		<div class="mock-field">
 			<template v-if="field.multiple">
 				<div>
-					<h5>{{ field.name }}</h5>
+					<slot name="header">
+						<h5>{{ field.name }}</h5>
+					</slot>
 					<ul class="mock-field-extend">
 						<li v-for="(xfield, name) in xfields">
 							<mock-field :field="xfield" :model="model">
+								<button slot="line-end"
+									@click="delXValue(name)"
+									class="mock-field-button"
+								>x</button>
 							</mock-field>
-							<button
-								@click="delXValue(name)"
-								class="mock-field-button"
-							>x</button>
 						</li>
 						<li>
 							<input
@@ -56,9 +58,11 @@
 							>+</button>
 						</li>
 					</ul>
+					<slot name="footer"></slot>
 				</div>
 			</template>
 			<template v-else>
+				<slot name="line-start"></slot>
 				<label class="mock-field-label">{{ field.name }}</label>
 				<select
 					v-if="field.enum"
@@ -99,6 +103,7 @@
 					:placeholder="field.type"
 				>
 				</textarea>
+				<slot name="line-end"></slot>
 			</template>
 		</div>
 	</script>
