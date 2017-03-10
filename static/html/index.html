@@ -1,28 +1,8 @@
+<!DOCTYPE html>
 <html>
 <head>
 	<title>Mock Server</title>
 	<script src="https://unpkg.com/vue/dist/vue.js"></script>
-	<script type="text/x-template" id="object-details">
-		<div>
-			<template v-if="self instanceof Array">
-				<ol>
-					<li v-for="v of self" v-if="v != self">
-						<span v-if="typeof v != 'object'">{{ v }}</span>
-					</li>
-				</ol>
-			</template>
-			<template v-else>
-				<ul>
-					<li v-for="(v, k) of self" v-if="!k.startsWith('$') && !k.startsWith('_') && v != self">
-						<span>{{ k }}</span>:
-						<span v-if="typeof v != 'object'">{{ v }}</span>
-						<div is="object-details" :self="v" v-else></div>
-					</li>
-				</ul>
-			</template>
-		</div>
-	</script>
-
 	<script type="text/x-template" id="component-mock-field">
 		<div class="mock-field">
 			<template v-if="field.multiple">
@@ -69,9 +49,7 @@
 					class="mock-field-input select-box"
 					v-model="model[field.name]"
 				>
-					<option v-for="i in field.enum" :value="i">
-						{{ i }}
-					</option>
+					<option v-for="i in field.enum" :value="i">{{ i }}</option>
 				</select>
 				<input
 					v-else-if="field.type == 'number'"
@@ -101,58 +79,11 @@
 					:value="model[field.name]"
 					@input="setValue($event.target)"
 					:placeholder="field.type"
-				>
-				</textarea>
+				></textarea>
 				<slot name="line-end"></slot>
 			</template>
 		</div>
 	</script>
-	<script>
-		Vue.component("mock-field", {
-			template: "#component-mock-field",
-			props: ["field", "model"],
-			data: function () {
-				return {
-					old_xname: "",
-					xname: "",
-					xvalue: "",
-					xfields: {},
-				};
-			},
-			methods: {
-				setValue: function (target) {
-					if (target.value && this.field.pattern) {
-						if (!target.value.match(this.field.pattern)) {
-							this.$emit("mock-field-input-error", this);
-							target.value = this.model[this.field.name];
-							return;
-						}
-					}
-					Vue.set(this.model, this.field.name, target.value);
-				},
-				setXValue: function () {
-					if (!this.xname) {
-						return;
-					}
-					var xname = this.field.name + ":" + this.xname;
-					this.model[xname] = this.xvalue;
-					this.xname = "";
-					this.xvalue = "";
-					Vue.set(this.xfields, xname, {
-						name: xname,
-						type: this.field.type,
-						default: "",
-						multiple: false,
-					});
-				},
-				delXValue: function (xname) {
-					Vue.delete(this.model, xname);
-					Vue.delete(this.xfields, xname);
-				}
-			},
-		});
-	</script>
-
 	<script type="text/x-template" id="component-mock-details">
 		<div class="mock-details">
 			<h3 class="mock-details-title">{{ schema.name }}</h3>
@@ -174,62 +105,14 @@
 			</div>
 		</div>
 	</script>
-	<script>
-		Vue.component("mock-details", {
-			template: "#component-mock-details",
-			props: ["schema", "model"],
-			methods: {
-				sorted_fields: function (fields) {
-					var field_list = [];
-					for (f in fields) {
-						if (fields.hasOwnProperty(f)) {
-							field_list.push(fields[f]);
-						}
-					}
-					field_list.sort(function (x, y) {
-						if (x.multiple != y.multiple) {
-							if (x.multiple) {
-								return 1;
-							}
-							else {
-								return -1;
-							}
-						}
-						if (x.rich_text != y.rich_text) {
-							if (x.rich_text) {
-								return 1;
-							}
-							else {
-								return -1;
-							}
-						}
-						if (x.type != y.type) {
-							return x.type.localeCompare(y.type);
-						}
-						return x.name.localeCompare(y.name);
-					});
-					return field_list;
-				}
-			},
-		});
-	</script>
 </head>
 <body>
 	<div id="test">
 		<mock-details :schema="schema" :model="model"></mock-details>
 	</div>
-<div id="main" style="display: none">
-	<input id="bridge" type="hidden">
-	<div id="schema-tab">
-		<div is="object-details" :self="self" name="schema-tab"></div>
-	</div>
-	<div id="schema-list">
-		<div is="object-details" :self="self" name="schema-list"></div>
-	</div>
-	<div id="item-details">
-		<div is="object-details" :self="self" name="item-details"></div>
-	</div>
 </div>
+<script src="/static/js/utils.js"></script>
+<script src="/static/js/component.js"></script>
 <script src="/static/js/index.js"></script>
 </body>
 </html>
