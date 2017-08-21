@@ -64,9 +64,10 @@ class AsyncRedisCli(SyncRedis):
 class Cache(object):
     PATTERN_SEP = ":"
     TEMPLATE_REF_KEY = "$ref"
+    REDIS_CLS = AsyncRedisCli
 
     def __init__(self, redis_cli=None):
-        self.redis_cli = redis_cli or AsyncRedisCli.get_global_instance()
+        self.redis_cli = redis_cli or self.REDIS_CLS.get_global_instance()
 
     @gen.coroutine
     def _get_all(self, uri):

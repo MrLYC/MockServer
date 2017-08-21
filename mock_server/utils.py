@@ -26,17 +26,21 @@ def get_uri_item(key, value, strict=False, encoding="utf-8"):
     return "%s=%s" % (key, value)
 
 
+def get_paths_uri(schema, paths, strict=False):
+    path = "/".join(paths)
+    if len(path) > 255 and not strict:  # redis max key size
+        path = get_uri_item("!", path, strict=False)
+
+    return "%s:%s" % (schema, path)
+
+
 def get_uri(schema, items, strict=False, encoding="utf-8"):
     paths = []
     keys = sorted(items.keys())
     for k in keys:
         paths.append(get_uri_item(k, items[k], strict, encoding))
 
-    path = "/".join(paths)
-    if len(path) > 255 and not strict:  # redis max key size
-        path = get_uri_item("!", path, strict=False)
-
-    return "%s:%s" % (schema, path)
+    return get_paths_uri(schema, paths, strict)
 
 
 def parse_uri_item(value, strict=False):
